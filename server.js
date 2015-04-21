@@ -2,13 +2,41 @@ var express = require('express'), http = require('http'), querystring = require(
 
 var hapikeyCopy = ''; //Purakai
 
-var hapikeyPaste = '' //AY
+var hapikeyPaste = ''; //AY
 
 var url = 'http://api.hubapi.com/content/api/v2/pages?hapikey=' + hapikeyCopy + "&limit=200";
 
 var app = express();
 
 var favPage = {};
+
+var layoutUrl = 'http://api.hubapi.com/content/api/v2/layouts?hapikey=' + hapikeyCopy + '&limit=200';
+
+function getLayout(callback){
+	return http.get(layoutUrl, function(res){
+		var body = '';
+		var myTemplate = {};
+		res.on('data', function(chunk){
+			body += chunk;
+		})
+		res.on('end', function(chunk){
+			var JSONbody = JSON.parse(body);
+			console.log(JSONbody.objects.length);
+			for (var i = 0; i<JSONbody.objects.length; i++){
+				if (JSONbody.objects[i].label.indexOf('new product page template (Clone)') != -1){
+					myTemplate = JSONbody.objects[i];
+					callback(myTemplate);
+				}
+			}
+		})
+	})
+}
+
+function createLayout(layout){
+	console.log(JSON.stringify(layout.layout_data));
+}
+
+getLayout(createLayout);
 
 function pages(callback){
 	return http.get(url, function(res){
@@ -18,8 +46,9 @@ function pages(callback){
 		});
 		res.on('end', function(chunk){
 			var JSONbody = JSON.parse(body);
+		
 			for (var i = 0; i<JSONbody.objects.length; i++){
-			
+		
 				if (JSONbody.objects[i].name.indexOf('Sustainable Surf Easy Tank') != -1){
 					favPage = JSONbody.objects[i];
 					callback(favPage);
@@ -37,14 +66,16 @@ function pages(callback){
 		//with new HTML based on values in the database.				
 				
 			}
+			
+			
 		})
 		
 	});
 
 }
 
-var hostname = 'http://api.hubapi.com';
-var path = '/content/api/v2/pages?hapikey=demo';
+var hostname = 'api.hubapi.com';
+var path = '/content/api/v2/pages?hapikey='+hapikeyPaste;
 
 var options = {
 	method: 'POST',
@@ -53,11 +84,7 @@ var options = {
 }
 
 function newPage(page){
-	var myPage = JSON.stringify({
-	    "name": "My API Page",
-	    "template_path": "hubspot_default/landing_page/basic_with_form/2_col_form_left.html"
-	});  //JSON.stringify(page)
-	console.log(myPage);
+	var myPage = JSON.stringify(page);
 	var req = http.request(options, function(res){
 		res.on('data', function (chunk) {
     		console.log('BODY: ' + chunk);
@@ -71,7 +98,7 @@ function newPage(page){
 	req.end();
 }
 
-pages(newPage);
+//pages(newPage);
 
 
 
